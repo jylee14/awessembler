@@ -83,6 +83,9 @@ pub fn process_args(args: &[String]) -> Result<(), AsmErr>{
 fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     let mut machine_codes = vec![];
     for (index, line) in filestring.lines().enumerate() {
+        if DEBUG{
+            println!("processing line: {}", index+1);
+        }
         if line.starts_with("//") { //comment line
             machine_codes.push(String::from(line));
             continue;
@@ -95,7 +98,7 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
         let processed_line = match process_line(line){
             Ok(l) => l,
             Err(msg) => {
-                return Err(AsmErr::new(index as u32, msg));
+                return Err(AsmErr::new((index + 1)as u32, msg));
             }
         };
         machine_codes.push(processed_line);
@@ -121,18 +124,13 @@ fn process_line(line: &str)->Result<String, &'static str>{
     let instruction = words[0].to_ascii_uppercase();
     let &machine_code = INSTRUCTION.get(instruction.as_str()).expect("invalid assembly instruction!");
 
-
     let iterim_machine_code = String::from(machine_code);
     let iterim_machine_code = iterim_machine_code.replace("_", "");
     let machine_code = iterim_machine_code.as_str();
 
     processed_line.push_str(machine_code);
-
     //handle single argument instructions first
-    if words[0]  == "BA" || words[0] == "BR" || words[0] == "HALT"{
-        if DEBUG{
-            println!("{}", processed_line);
-        }
+    if instruction == "CLR" || instruction  == "BA" || instruction == "BR" || instruction == "HALT"{
         return Ok(String::from(machine_code));
     }
 
@@ -150,7 +148,10 @@ fn process_line(line: &str)->Result<String, &'static str>{
 
     match arg[0]{
         b'r' | b'R' | b'#' => {
-            let int_value = u32::from_str_radix(&number, radix).unwrap() as u8;
+            let int_value = match i8::from_str_radix(&number, radix){
+                Ok(v) => v,
+                Err(_) => return Err("invalid number!")
+            };
             let mut binary_rep = format!("{:b}", int_value);
             let start_index = 8 - (9 - machine_code.len());
 
@@ -163,17 +164,44 @@ fn process_line(line: &str)->Result<String, &'static str>{
         b'$' => {
             let special_reg = String::from_utf8_lossy(&arg[1..]).to_ascii_uppercase();
             if special_reg == "ZERO" {
-                processed_line.push_str("1110");
-            }else if special_reg == "PC" {
                 processed_line.push_str("1111");
+            }else {
+                return Err("Unknown special register specified");
             }
+        },
+        b'['=> {
+            match words[1].find("]"){
+                None => return Err("Unmatched bracket!"),
+                _ => ()
+            };
+
+            match arg[1] {
+                b'r' | b'R' => {
+                    let max = if arg.len()-1 > 2 {
+                        arg.len() - 1
+                    }else{
+                        2
+                    };
+                    let number = String::from_utf8_lossy(&arg[2..max]);
+                    let int_value = match number.parse::<u8>(){
+                        Ok(i) => i,
+                        Err(_) => return Err("parse failed!")
+                    };
+
+                    let mut binary_rep = format!("{:b}", int_value);
+                    while binary_rep.len() < 3{
+                        binary_rep = "0".to_owned() + &binary_rep;
+                    }
+
+                    processed_line.push_str(&binary_rep);
+                },
+                _ => return Err("Invalid use of ldr/str syntax"),
+            }
+
         },
         _ => return Err("Encountered unknown symbol"),
     }
 
-    if DEBUG{
-        println!("{}", processed_line);
-    }
     assert!(processed_line.len() == 9);
     Ok(processed_line)
 }
