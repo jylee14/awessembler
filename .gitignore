@@ -1,2 +1,6 @@
 /target
 **/*.rs.bk
+.gitignore
+test*
+reference
+.DS*

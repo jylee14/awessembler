@@ -1,5 +1,5 @@
 [package]
-name = "Awessembler"
+name = "awessembler"
 version = "0.1.0"
 authors = ["Jun Lee <jy45lee@gmail.com>"]
 edition = "2018"

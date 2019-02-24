@@ -14,6 +14,7 @@ lazy_static!{
     static ref INSTRUCTION: HashMap<&'static str, &'static str> = {
         let mut m = HashMap::new();
         m.insert("MOV",     "0_");
+        m.insert("CLR",     "0_0000_0000");
         m.insert("AND",     "1_0000_0");
         m.insert("ORR",     "1_0000_1");
         m.insert("LSL",     "1_00001_0");
@@ -42,7 +43,19 @@ lazy_static!{
 }
 
 #[derive(Debug)]
-struct AsmErr;
+pub struct AsmErr{
+    pub line_number: u32,
+    pub message: String,
+}
+
+impl AsmErr{
+    fn new(line_number: u32, message: &str) -> AsmErr{
+        AsmErr{
+            line_number,
+            message: String::from(message)
+        }
+    }
+}
 
 impl Error for AsmErr{
 
@@ -50,14 +63,18 @@ impl Error for AsmErr{
 
 impl fmt::Display for AsmErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Oh no, something bad went down")
+        write!(f, "Assembly failed!\nline: {}\t{}", self.line_number, self.message)
     }
 }
 
-pub fn process_args(args: &[String]) -> Result<(), &'static str>{
+pub fn process_args(args: &[String]) -> Result<(), AsmErr>{
     for arg in args.iter(){
-        let file_content = fs::read_to_string(&arg).expect("failed to read file!");
-        process_file(arg, file_content);
+        let file_content = match fs::read_to_string(&arg){
+            Ok(str) => str,
+            Err(_) => return Err(AsmErr::new(0,
+                                             "failed to read assembly file!")),
+        };
+        process_file(arg, file_content)?;
     }
 
     return Ok(())
@@ -75,16 +92,24 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
             continue;
         }
 
-        let processed_line = process_line(line).unwrap();
+        let processed_line = match process_line(line){
+            Ok(l) => l,
+            Err(msg) => {
+                return Err(AsmErr::new(index as u32, msg));
+            }
+        };
         machine_codes.push(processed_line);
     }
 
     let processed_code = machine_codes.join("\n");
 
     let filename = filename.replace(".s", ".m");
-    fs::write(filename, processed_code).expect(
-        "Failed to write machine code to file!"
-    );
+    match fs::write(filename, processed_code){
+        Err(_) => return Err(AsmErr::new(0,
+                               "failed to write file to disk!")),
+        _ => (),
+    };
+
 
     Ok(())
 }

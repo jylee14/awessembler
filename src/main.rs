@@ -8,5 +8,12 @@ fn main() {
         return ();
     }
 
-    Awessembler::process_args(&args[1..]).unwrap();
+    match awessembler::process_args(&args[1..]){
+        Err(e) => {
+            eprintln!("Assembly failed!\nAt line {}, {}",
+                      e.line_number,
+                      e.message);
+        },
+        _ => ()
+    };
 }
