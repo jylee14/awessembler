@@ -7,7 +7,7 @@ use std::str;
 use std::error::Error;
 use std::fmt;
 
-const DEBUG:bool = true;
+const DEBUG:bool = false;
 
 //asm -> machine code map
 lazy_static!{
@@ -29,7 +29,7 @@ lazy_static!{
         m.insert("RDR",     "1_0110");
         m.insert("MVN",     "1_0111");
         m.insert("CMP",     "1_1000");
-        m.insert("BLT",     "1_1001");
+        m.insert("BLE",     "1_1001");
         m.insert("BGT",     "1_1010");
         m.insert("BEQ",     "1_1011");
         m.insert("BNE",     "1_1110");
@@ -83,15 +83,8 @@ pub fn process_args(args: &[String]) -> Result<(), AsmErr>{
 fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     let mut machine_codes = vec![];
     for (index, line) in filestring.lines().enumerate() {
-        if DEBUG{
-            println!("processing line: {}", index+1);
-        }
-        if line.starts_with("//") { //comment line
+        if line.starts_with("//") || line.contains(":") || line.is_empty() {
             machine_codes.push(String::from(line));
-            continue;
-        }
-
-        if line.contains(":") || line.is_empty() {
             continue;
         }
 
@@ -118,6 +111,9 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
 }
 
 fn process_line(line: &str)->Result<String, &'static str>{
+    if DEBUG{
+        println!("processing: {}", line);
+    }
     let mut processed_line = String::new();
 
     let words:Vec<&str> = line.split(" ").collect();    //get all the components of the line
@@ -136,29 +132,33 @@ fn process_line(line: &str)->Result<String, &'static str>{
 
     let arg = words[1].as_bytes();
     let mut number = String::from_utf8_lossy(&arg[1..]);
-    let radix = if number.contains("0x"){
+    let radix = if number.contains("0x") || number.contains("0X"){
         number = String::from_utf8_lossy(&arg[3..]);
         16
-    }else if number.contains("0b"){
+    }else if number.contains("0b") || number.contains("0B"){
         number = String::from_utf8_lossy(&arg[3..]);
         2
     }else{
         10
     };
 
+    if DEBUG{
+        eprintln!("number detected: {}, radix {}", number, radix);
+    }
+
     match arg[0]{
         b'r' | b'R' | b'#' => {
-            let int_value = match i8::from_str_radix(&number, radix){
+            let int_value = match i16::from_str_radix(&number, radix){
                 Ok(v) => v,
                 Err(_) => return Err("invalid number!")
             };
-            let mut binary_rep = format!("{:b}", int_value);
-            let start_index = 8 - (9 - machine_code.len());
+            let int_value = int_value as i8;
+            let start_index = machine_code.len() - 1;
 
+            let mut binary_rep = format!("{:b}", int_value);
             while binary_rep.len() < 8{
                 binary_rep = "0".to_owned() + &binary_rep;
             }
-
             processed_line.push_str(&binary_rep[start_index..]);
         },
         b'$' => {
@@ -188,12 +188,13 @@ fn process_line(line: &str)->Result<String, &'static str>{
                         Err(_) => return Err("parse failed!")
                     };
 
+
+                    let start_index = machine_code.len() - 1;
                     let mut binary_rep = format!("{:b}", int_value);
-                    while binary_rep.len() < 3{
+                    while binary_rep.len() < 8{
                         binary_rep = "0".to_owned() + &binary_rep;
                     }
-
-                    processed_line.push_str(&binary_rep);
+                    processed_line.push_str(&binary_rep[start_index..]);
                 },
                 _ => return Err("Invalid use of ldr/str syntax"),
             }
@@ -202,6 +203,12 @@ fn process_line(line: &str)->Result<String, &'static str>{
         _ => return Err("Encountered unknown symbol"),
     }
 
-    assert!(processed_line.len() == 9);
+    if line.contains("//") {    //theres a comment
+        let comment = line.find("//").unwrap(); //guaranteed to contain '//'
+        let comment = &line[comment..];
+        processed_line.push_str(format!("\t\t{}", comment).as_str());
+    }
+
+    //assert!(processed_line.len() == 9);
     Ok(processed_line)
 }
