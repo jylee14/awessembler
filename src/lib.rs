@@ -84,7 +84,7 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     let mut machine_codes = vec![];
     for (index, line) in filestring.lines().enumerate() {
         if line.starts_with("//") || line.contains(":") || line.is_empty() {
-            machine_codes.push(String::from(line));
+            //machine_codes.push(String::from(line));
             continue;
         }
 
@@ -155,10 +155,7 @@ fn process_line(line: &str)->Result<String, &'static str>{
             let int_value = int_value as i8;
             let start_index = machine_code.len() - 1;
 
-            let mut binary_rep = format!("{:b}", int_value);
-            while binary_rep.len() < 8{
-                binary_rep = "0".to_owned() + &binary_rep;
-            }
+            let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
             processed_line.push_str(&binary_rep[start_index..]);
         },
         b'$' => {
@@ -190,10 +187,7 @@ fn process_line(line: &str)->Result<String, &'static str>{
 
 
                     let start_index = machine_code.len() - 1;
-                    let mut binary_rep = format!("{:b}", int_value);
-                    while binary_rep.len() < 8{
-                        binary_rep = "0".to_owned() + &binary_rep;
-                    }
+                    let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
                     processed_line.push_str(&binary_rep[start_index..]);
                 },
                 _ => return Err("Invalid use of ldr/str syntax"),
@@ -201,12 +195,6 @@ fn process_line(line: &str)->Result<String, &'static str>{
 
         },
         _ => return Err("Encountered unknown symbol"),
-    }
-
-    if line.contains("//") {    //theres a comment
-        let comment = line.find("//").unwrap(); //guaranteed to contain '//'
-        let comment = &line[comment..];
-        processed_line.push_str(format!("\t\t{}", comment).as_str());
     }
 
     //assert!(processed_line.len() == 9);
