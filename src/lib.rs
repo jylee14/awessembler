@@ -57,10 +57,7 @@ impl AsmErr{
     }
 }
 
-impl Error for AsmErr{
-
-}
-
+impl Error for AsmErr{ }
 impl fmt::Display for AsmErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Assembly failed!\nline: {}\t{}", self.line_number, self.message)
@@ -98,14 +95,11 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     }
 
     let processed_code = machine_codes.join("\n");
-
     let filename = filename.replace(".s", ".m");
     match fs::write(filename, processed_code){
-        Err(_) => return Err(AsmErr::new(0,
-                               "failed to write file to disk!")),
+        Err(_) => return Err(AsmErr::new(0, "failed to write file to disk!")),
         _ => (),
     };
-
 
     Ok(())
 }
@@ -184,7 +178,6 @@ fn process_line(line: &str)->Result<String, &'static str>{
                         Ok(i) => i,
                         Err(_) => return Err("parse failed!")
                     };
-
 
                     let start_index = machine_code.len() - 1;
                     let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
