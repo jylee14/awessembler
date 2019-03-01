@@ -5,8 +5,8 @@ does zero optimizations (for now :])
 
 # to make 
 in the project directory, run 
-"cargo build [--release]" 
+`cargo build [--release]`
 
 # to run
 in the project directory, run 
-"cargo run [--release] assembly1.s [assembly_n.s]"
+`cargo run [--release] assembly1.s [assembly_n.s]`
