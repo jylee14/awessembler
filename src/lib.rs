@@ -112,7 +112,10 @@ fn process_line(line: &str)->Result<String, &'static str>{
 
     let words:Vec<&str> = line.split(" ").collect();    //get all the components of the line
     let instruction = words[0].to_ascii_uppercase();
-    let &machine_code = INSTRUCTION.get(instruction.as_str()).expect("invalid assembly instruction!");
+    let &machine_code = match INSTRUCTION.get(instruction.as_str()){
+        Some(v) => v,
+        None => return Err("invalid assembly instruction!"),
+    };
 
     let iterim_machine_code = String::from(machine_code);
     let iterim_machine_code = iterim_machine_code.replace("_", "");
@@ -121,10 +124,25 @@ fn process_line(line: &str)->Result<String, &'static str>{
     processed_line.push_str(machine_code);
     //handle single argument instructions first
     if instruction == "CLR" || instruction  == "BA" || instruction == "BR" || instruction == "HALT"{
-        return Ok(String::from(machine_code));
+        return Ok(processed_line);
     }
 
-    let arg = words[1].as_bytes();
+    let arg = process_arg(words[1].as_bytes())?;
+    let arg = if arg.len() + machine_code.len() > 9{ // need to trim
+        let start = arg.len() + machine_code.len() - 9;
+        &arg.as_bytes()[start..]
+    }else{
+        arg.as_bytes()
+    };
+
+    let final_arg = String::from_utf8_lossy(arg);
+    processed_line.push_str(&final_arg);
+
+    //assert!(processed_line.len() == 9);
+    Ok(processed_line)
+}
+
+fn process_arg(arg: &[u8])->Result<String, &'static str>{
     let mut number = String::from_utf8_lossy(&arg[1..]);
     let radix = if number.contains("0x") || number.contains("0X"){
         number = String::from_utf8_lossy(&arg[3..]);
@@ -145,25 +163,22 @@ fn process_line(line: &str)->Result<String, &'static str>{
             let int_value = match i16::from_str_radix(&number, radix){
                 Ok(v) => v,
                 Err(_) => return Err("invalid number!")
-            };
-            let int_value = int_value as i8;
-            let start_index = machine_code.len() - 1;
+            } as i8;
 
             let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
-            processed_line.push_str(&binary_rep[start_index..]);
+            Ok(binary_rep)
         },
         b'$' => {
             let special_reg = String::from_utf8_lossy(&arg[1..]).to_ascii_uppercase();
             if special_reg == "ZERO" {
-                processed_line.push_str("1111");
+                Ok(String::from("1111"))
             }else {
                 return Err("Unknown special register specified");
             }
         },
         b'['=> {
-            match words[1].find("]"){
-                None => return Err("Unmatched bracket!"),
-                _ => ()
+            if !(arg.iter().any(|x| *x == ']' as u8)){
+                return Err("Unmatched bracket!");
             };
 
             match arg[1] {
@@ -179,9 +194,8 @@ fn process_line(line: &str)->Result<String, &'static str>{
                         Err(_) => return Err("parse failed!")
                     };
 
-                    let start_index = machine_code.len() - 1;
                     let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
-                    processed_line.push_str(&binary_rep[start_index..]);
+                    Ok(binary_rep)
                 },
                 _ => return Err("Invalid use of ldr/str syntax"),
             }
@@ -189,7 +203,4 @@ fn process_line(line: &str)->Result<String, &'static str>{
         },
         _ => return Err("Encountered unknown symbol"),
     }
-
-    //assert!(processed_line.len() == 9);
-    Ok(processed_line)
 }

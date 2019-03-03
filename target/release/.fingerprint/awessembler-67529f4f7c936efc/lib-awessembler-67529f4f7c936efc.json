@@ -1,0 +1,1 @@
+{"rustc":5105358705442676925,"features":"[]","target":6259133570569216864,"profile":5060393583489210841,"path":10872709659218687626,"deps":[["lazy_static v1.2.0","lazy_static",5847538035840839377]],"local":[{"MtimeBased":[[1551589733,105334341],".fingerprint/awessembler-67529f4f7c936efc/dep-lib-awessembler-67529f4f7c936efc"]}],"rustflags":[],"edition":"Edition2018"}
