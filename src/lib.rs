@@ -17,8 +17,8 @@ lazy_static!{
         m.insert("CLR",     "0_0000_0000");
         m.insert("AND",     "1_0000_0");
         m.insert("ORR",     "1_0000_1");
-        m.insert("LSL",     "1_00001_0");
-        m.insert("LSR",     "1_00001_1");
+        m.insert("LSL",     "1_0001_0");
+        m.insert("LSR",     "1_0001_1");
         m.insert("ADD",     "1_0010_0");
         m.insert("ADC",     "1_0010_1");
         m.insert("SUB",     "1_00101_0");
