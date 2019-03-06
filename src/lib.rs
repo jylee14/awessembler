@@ -21,8 +21,8 @@ lazy_static!{
         m.insert("LSR",     "1_0001_1");
         m.insert("ADD",     "1_0010_0");
         m.insert("ADC",     "1_0010_1");
-        m.insert("SUB",     "1_00101_0");
-        m.insert("SBC",     "1_00101_1");
+        m.insert("SUB",     "1_0011_0");
+        m.insert("SBC",     "1_0011_1");
         m.insert("LDR",     "1_0100_0");
         m.insert("STR",     "1_0100_1");
         m.insert("WRT",     "1_0101");
@@ -39,6 +39,43 @@ lazy_static!{
         m.insert("HALT",    "1_1111_1111");
 
         m
+    };
+}
+
+// argument type of each assembly.
+// C for const  (#??)
+// R3 for reg   (r0-7)
+// R4 for reg   (r0-14)
+// M for mem    ([reg])
+lazy_static!{
+    static ref ARG_TYPE: HashMap<&'static str, &'static str> = {
+        let mut t = HashMap::new();
+
+        t.insert("MOV",     "C");
+        t.insert("BLE",     "C");
+        t.insert("BGT",     "C");
+        t.insert("BEQ",     "C");
+        t.insert("BNE",     "C");
+        t.insert("LSL",     "C");
+        t.insert("LSR",     "C");
+
+        t.insert("LDR",     "M");
+        t.insert("STR",     "M");
+
+        t.insert("AND",     "R3");
+        t.insert("ORR",     "R3");
+        t.insert("ADD",     "R3");
+        t.insert("ADC",     "R3");
+        t.insert("SUB",     "R3");
+        t.insert("SBC",     "R3");
+        t.insert("CLZ",     "R3");
+
+        t.insert("WRT",     "R4");
+        t.insert("RDR",     "R4");
+        t.insert("MVN",     "R4");
+        t.insert("CMP",     "R4");
+
+        t
     };
 }
 
@@ -64,7 +101,7 @@ impl fmt::Display for AsmErr {
     }
 }
 
-pub fn process_args(args: &[String]) -> Result<(), AsmErr>{
+pub fn process_command_args(args: &[String]) -> Result<(), AsmErr>{
     for arg in args.iter(){
         let file_content = match fs::read_to_string(&arg){
             Ok(str) => str,
@@ -147,9 +184,14 @@ fn process_line(line: &str)->Result<String, &'static str>{
 }
 
 fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
+    let arg_type = *ARG_TYPE.get(asm).unwrap();  //should NEVER fail here
     let mut number;
-    match asm{
-        "MOV" | "BEQ" | "BNE" | "BLE" | "BGT" | "LSR" | "LSL" => {
+    match arg_type{
+        "C" => {
+            if arg[0] != b'#' {
+                return Err("Constant must be preceded with '#'");
+            }
+
             number = String::from_utf8_lossy(&arg[1..]);
             let radix = if number.contains("0x") || number.contains("0X"){
                 number = String::from_utf8_lossy(&arg[3..]);
@@ -161,45 +203,40 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
                 10
             };
 
-            let int_value;
-            if arg[0] != b'#' {
-                return Err("Constant must be preceded with '#'")
-            }else{
-                int_value = match i16::from_str_radix(&number, radix) {
-                    Ok(v) => v,
-                    Err(_) => return Err("invalid number!")
-                } as i8;
-            }
+            let int_value= match i16::from_str_radix(&number, radix) {
+                Ok(v) => v,
+                Err(_) => return Err("invalid number!")
+            } as i8;
 
             let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
             return Ok(binary_rep);
         },
 
-        "LDR" | "STR" => {
+        "M" => {
             if arg[0] != b'['{
                 return Err("LDR/STR [reg]");
-            }else{
-                if !(arg.iter().any(|x| *x == ']' as u8)){
-                    return Err("Unmatched bracket!");
-                };
+            }
 
-                match arg[1]{
-                    b'r' | b'R' => {
-                        number = String::from_utf8_lossy(&arg[2..arg.len()-1]);
-                        let int_value = match number.parse::<u8>(){
-                            Ok(i) => i,
-                            Err(_) => return Err("parse failed!")
-                        };
+            if !(arg.iter().any(|x| *x == ']' as u8)){
+                return Err("Unmatched bracket!");
+            };
 
-                        let binary_rep = format!("{number:>0width$b}", number = int_value, width=3);
-                        Ok(binary_rep)
-                    },
-                    _ => return Err("Invalid use of ldr/str syntax"),
-                }
+            match arg[1]{
+                b'r' | b'R' => {
+                    number = String::from_utf8_lossy(&arg[2..arg.len()-1]);
+                    let int_value = match number.parse::<u8>(){
+                        Ok(i) => i,
+                        Err(_) => return Err("parse failed!")
+                    };
+
+                    let binary_rep = format!("{number:>0width$b}", number = int_value, width=3);
+                    Ok(binary_rep)
+                },
+                _ => return Err("Invalid use of ldr/str syntax"),
             }
         },
 
-        _ => {
+        "R3" | "R4" => {
             number = String::from_utf8_lossy(&arg[1..]);
             match arg[0] {
                 b'r' | b'R' => {
@@ -208,7 +245,8 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
                         Err(_) => return Err("invalid number!")
                     };
 
-                    let binary_rep = format!("{num:>0width$b}", num = int_value, width = 4);
+                    let width = if arg_type == "R3" { 3 }else{ 4 };
+                    let binary_rep = format!("{num:>0width$b}", num = int_value, width = width);
                     Ok(binary_rep)
                 },
                 b'$' => {
@@ -223,6 +261,8 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
                     return Err("encountered unexpected symbol!");
                 }
             }
-        }
+        },
+
+        _ => Ok(String::new()),    //this shouldnt happen
     }
 }
