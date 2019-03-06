@@ -14,8 +14,6 @@ fn main() {
                       e.line_number,
                       e.message);
         },
-        _ => ()
+        _ => println!("DONE"),
     };
-
-    println!("DONE");
 }

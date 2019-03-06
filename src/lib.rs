@@ -88,7 +88,8 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
         let processed_line = match process_line(line){
             Ok(l) => l,
             Err(msg) => {
-                return Err(AsmErr::new((index + 1)as u32, msg));
+                return Err(AsmErr::new((index + 1)as u32,
+                                       format!("{}\n{}", line, msg).as_str()));
             }
         };
         machine_codes.push(processed_line);
@@ -127,7 +128,10 @@ fn process_line(line: &str)->Result<String, &'static str>{
         return Ok(processed_line);
     }
 
-    let arg = process_arg(words[1].as_bytes())?;
+    let arg = match process_arg(&instruction, words[1].trim().as_bytes()){
+        Ok(a) => a,
+        Err(e) => return Err(e),
+    };
     let arg = if arg.len() + machine_code.len() > 9{ // need to trim
         let start = arg.len() + machine_code.len() - 9;
         &arg.as_bytes()[start..]
@@ -138,69 +142,87 @@ fn process_line(line: &str)->Result<String, &'static str>{
     let final_arg = String::from_utf8_lossy(arg);
     processed_line.push_str(&final_arg);
 
-    //assert!(processed_line.len() == 9);
+    assert!(processed_line.len() == 9);
     Ok(processed_line)
 }
 
-fn process_arg(arg: &[u8])->Result<String, &'static str>{
-    let mut number = String::from_utf8_lossy(&arg[1..]);
-    let radix = if number.contains("0x") || number.contains("0X"){
-        number = String::from_utf8_lossy(&arg[3..]);
-        16
-    }else if number.contains("0b") || number.contains("0B"){
-        number = String::from_utf8_lossy(&arg[3..]);
-        2
-    }else{
-        10
-    };
-
-    if DEBUG{
-        eprintln!("number detected: {}, radix {}", number, radix);
-    }
-
-    match arg[0]{
-        b'r' | b'R' | b'#' => {
-            let int_value = match i16::from_str_radix(&number, radix){
-                Ok(v) => v,
-                Err(_) => return Err("invalid number!")
-            } as i8;
-
-            let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
-            Ok(binary_rep)
-        },
-        b'$' => {
-            let special_reg = String::from_utf8_lossy(&arg[1..]).to_ascii_uppercase();
-            if special_reg == "ZERO" {
-                Ok(String::from("1111"))
-            }else {
-                return Err("Unknown special register specified");
-            }
-        },
-        b'['=> {
-            if !(arg.iter().any(|x| *x == ']' as u8)){
-                return Err("Unmatched bracket!");
+fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
+    let mut number;
+    match asm{
+        "MOV" | "BEQ" | "BNE" | "BLE" | "BGT" | "LSR" | "LSL" => {
+            number = String::from_utf8_lossy(&arg[1..]);
+            let radix = if number.contains("0x") || number.contains("0X"){
+                number = String::from_utf8_lossy(&arg[3..]);
+                16
+            }else if number.contains("0b") || number.contains("0B"){
+                number = String::from_utf8_lossy(&arg[3..]);
+                2
+            }else{
+                10
             };
 
-            match arg[1] {
-                b'r' | b'R' => {
-                    let max = if arg.len()-1 > 2 {
-                        arg.len() - 1
-                    }else{
-                        2
-                    };
-                    let number = String::from_utf8_lossy(&arg[2..max]);
-                    let int_value = match number.parse::<u8>(){
-                        Ok(i) => i,
-                        Err(_) => return Err("parse failed!")
-                    };
-
-                    let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
-                    Ok(binary_rep)
-                },
-                _ => return Err("Invalid use of ldr/str syntax"),
+            let int_value;
+            if arg[0] != b'#' {
+                return Err("Constant must be preceded with '#'")
+            }else{
+                int_value = match i16::from_str_radix(&number, radix) {
+                    Ok(v) => v,
+                    Err(_) => return Err("invalid number!")
+                } as i8;
             }
 
+            let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
+            return Ok(binary_rep);
         },
-        _ => return Err("Encountered unknown symbol"),
+
+        "LDR" | "STR" => {
+            if arg[0] != b'['{
+                return Err("LDR/STR [reg]");
+            }else{
+                if !(arg.iter().any(|x| *x == ']' as u8)){
+                    return Err("Unmatched bracket!");
+                };
+
+                match arg[1]{
+                    b'r' | b'R' => {
+                        number = String::from_utf8_lossy(&arg[2..arg.len()-1]);
+                        let int_value = match number.parse::<u8>(){
+                            Ok(i) => i,
+                            Err(_) => return Err("parse failed!")
+                        };
+
+                        let binary_rep = format!("{number:>0width$b}", number = int_value, width=3);
+                        Ok(binary_rep)
+                    },
+                    _ => return Err("Invalid use of ldr/str syntax"),
+                }
+            }
+        },
+
+        _ => {
+            number = String::from_utf8_lossy(&arg[1..]);
+            match arg[0] {
+                b'r' | b'R' => {
+                    let int_value = match number.parse::<i8>(){
+                        Ok(v) => v,
+                        Err(_) => return Err("invalid number!")
+                    };
+
+                    let binary_rep = format!("{num:>0width$b}", num = int_value, width = 4);
+                    Ok(binary_rep)
+                },
+                b'$' => {
+                    let special_reg = String::from_utf8_lossy(&arg[1..]).to_ascii_uppercase();
+                    if special_reg == "ZERO" {
+                        Ok(String::from("1111"))
+                    } else {
+                        return Err("Unknown special register specified");
+                    }
+                },
+                _ => {
+                    return Err("encountered unexpected symbol!");
+                }
+            }
+        }
     }
 }
