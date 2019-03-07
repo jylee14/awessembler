@@ -9,73 +9,40 @@ use std::fmt;
 
 const DEBUG:bool = false;
 
-//asm -> machine code map
+//asm -> (machine code, type) map
 lazy_static!{
-    static ref INSTRUCTION: HashMap<&'static str, &'static str> = {
+    static ref INSTRUCTION: HashMap<&'static str, (&'static str, &'static str)> = {
         let mut m = HashMap::new();
-        m.insert("MOV",     "0_");
-        m.insert("CLR",     "0_0000_0000");
-        m.insert("AND",     "1_0000_0");
-        m.insert("ORR",     "1_0000_1");
-        m.insert("LSL",     "1_0001_0");
-        m.insert("LSR",     "1_0001_1");
-        m.insert("ADD",     "1_0010_0");
-        m.insert("ADC",     "1_0010_1");
-        m.insert("SUB",     "1_0011_0");
-        m.insert("SBC",     "1_0011_1");
-        m.insert("LDR",     "1_0100_0");
-        m.insert("STR",     "1_0100_1");
-        m.insert("WRT",     "1_0101");
-        m.insert("RDR",     "1_0110");
-        m.insert("MVN",     "1_0111");
-        m.insert("CMP",     "1_1000");
-        m.insert("BLE",     "1_1001");
-        m.insert("BGT",     "1_1010");
-        m.insert("BEQ",     "1_1011");
-        m.insert("BNE",     "1_1110");
-        m.insert("CLZ",     "1_11101_0");
-        m.insert("BA",      "1_1111_1000");
-        m.insert("BR",      "1_1111_1001");
-        m.insert("HALT",    "1_1111_1111");
+        m.insert("MOV" , ("0",         "C"));
+        m.insert("BLE" , ("11001",     "C"));
+        m.insert("BGT" , ("11010",     "C"));
+        m.insert("BEQ" , ("11011",     "C"));
+        m.insert("BNE" , ("11110",     "C"));
+        m.insert("LSL" , ("100010",    "C"));
+        m.insert("LSR" , ("100011",    "C"));
+
+        m.insert("LDR" , ("101000",    "M"));
+        m.insert("STR" , ("101001",    "M"));
+
+        m.insert("AND" , ("100000",    "R3"));
+        m.insert("ORR" , ("100001",    "R3"));
+        m.insert("ADD" , ("100100",    "R3"));
+        m.insert("ADC" , ("100101",    "R3"));
+        m.insert("SUB" , ("100110",    "R3"));
+        m.insert("SBC" , ("100111",    "R3"));
+        m.insert("CLZ" , ("1111010",   "R3"));
+
+        m.insert("CMP" , ("11000",     "R4"));
+        m.insert("WRT" , ("10101",     "R4"));
+        m.insert("RDR" , ("10110",     "R4"));
+        m.insert("MVN" , ("10111",     "R4"));
+
+        m.insert("CLR" , ("000000000", "O"));
+        m.insert("BA"  , ("111111000", "O"));
+        m.insert("BR"  , ("111111001", "O"));
+        m.insert("HALT", ("111111111", "O"));
 
         m
-    };
-}
-
-// argument type of each assembly.
-// C for const  (#??)
-// R3 for reg   (r0-7)
-// R4 for reg   (r0-14)
-// M for mem    ([reg])
-lazy_static!{
-    static ref ARG_TYPE: HashMap<&'static str, &'static str> = {
-        let mut t = HashMap::new();
-
-        t.insert("MOV",     "C");
-        t.insert("BLE",     "C");
-        t.insert("BGT",     "C");
-        t.insert("BEQ",     "C");
-        t.insert("BNE",     "C");
-        t.insert("LSL",     "C");
-        t.insert("LSR",     "C");
-
-        t.insert("LDR",     "M");
-        t.insert("STR",     "M");
-
-        t.insert("AND",     "R3");
-        t.insert("ORR",     "R3");
-        t.insert("ADD",     "R3");
-        t.insert("ADC",     "R3");
-        t.insert("SUB",     "R3");
-        t.insert("SBC",     "R3");
-        t.insert("CLZ",     "R3");
-
-        t.insert("WRT",     "R4");
-        t.insert("RDR",     "R4");
-        t.insert("MVN",     "R4");
-        t.insert("CMP",     "R4");
-
-        t
     };
 }
 
@@ -118,8 +85,11 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     let mut machine_codes = vec![];
     for (index, line) in filestring.lines().enumerate() {
         if line.starts_with("//") || line.contains(":") || line.is_empty() {
-            //machine_codes.push(String::from(line));
             continue;
+        }
+
+        if DEBUG{
+            println!("processing line {}: {}", index+1, line);
         }
 
         let processed_line = match process_line(line){
@@ -143,23 +113,17 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
 }
 
 fn process_line(line: &str)->Result<String, &'static str>{
-    if DEBUG{
-        println!("processing: {}", line);
-    }
     let mut processed_line = String::new();
 
     let words:Vec<&str> = line.split(" ").collect();    //get all the components of the line
     let instruction = words[0].to_ascii_uppercase();
     let &machine_code = match INSTRUCTION.get(instruction.as_str()){
-        Some(v) => v,
+        Some((v, _)) => v,
         None => return Err("invalid assembly instruction!"),
     };
 
-    let iterim_machine_code = String::from(machine_code);
-    let iterim_machine_code = iterim_machine_code.replace("_", "");
-    let machine_code = iterim_machine_code.as_str();
-
     processed_line.push_str(machine_code);
+
     //handle single argument instructions first
     if instruction == "CLR" || instruction  == "BA" || instruction == "BR" || instruction == "HALT"{
         return Ok(processed_line);
@@ -179,17 +143,17 @@ fn process_line(line: &str)->Result<String, &'static str>{
     let final_arg = String::from_utf8_lossy(arg);
     processed_line.push_str(&final_arg);
 
-    assert!(processed_line.len() == 9);
+    assert_eq!(processed_line.len(), 9);
     Ok(processed_line)
 }
 
 fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
-    let arg_type = *ARG_TYPE.get(asm).unwrap();  //should NEVER fail here
+    let arg_type = INSTRUCTION.get(asm).unwrap().1;  //should NEVER fail here
     let mut number;
     match arg_type{
         "C" => {
             if arg[0] != b'#' {
-                return Err("Constant must be preceded with '#'");
+                return Err("usage: ASM #const");
             }
 
             number = String::from_utf8_lossy(&arg[1..]);
@@ -214,7 +178,7 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
 
         "M" => {
             if arg[0] != b'['{
-                return Err("LDR/STR [reg]");
+                return Err("usage: LDR/STR [r0-7]");
             }
 
             if !(arg.iter().any(|x| *x == ']' as u8)){
@@ -240,7 +204,7 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
             number = String::from_utf8_lossy(&arg[1..]);
             match arg[0] {
                 b'r' | b'R' => {
-                    let int_value = match number.parse::<i8>(){
+                    let int_value = match number.parse::<u8>(){
                         Ok(v) => v,
                         Err(_) => return Err("invalid number!")
                     };
@@ -263,6 +227,6 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
             }
         },
 
-        _ => Ok(String::new()),    //this shouldnt happen
+        _ => panic!("NANI?????"),    //this shouldnt happen
     }
 }
