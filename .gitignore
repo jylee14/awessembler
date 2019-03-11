@@ -2,3 +2,6 @@
 **/*.rs.bk
 .gitignore
 .DS*
+*.ref
+*.s
+*.m

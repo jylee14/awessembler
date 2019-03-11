@@ -1,11 +1,35 @@
 #[macro_use]
 extern crate lazy_static;
 
-use std::collections::HashMap;
 use std::fs;
+use std::fmt;
 use std::str;
 use std::error::Error;
-use std::fmt;
+use std::collections::HashMap;
+
+use linked_hash_map::LinkedHashMap;
+
+#[derive(Debug)]
+pub struct AsmErr {
+    pub line_number: u32,
+    pub message: String,
+}
+
+impl AsmErr {
+    fn new(line_number: u32, message: &str) -> AsmErr {
+        AsmErr {
+            line_number,
+            message: String::from(message)
+        }
+    }
+}
+
+impl Error for AsmErr{ }
+impl fmt::Display for AsmErr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Assembly failed!\nline: {}\t{}", self.line_number, self.message)
+    }
+}
 
 const DEBUG:bool = false;
 
@@ -46,28 +70,6 @@ lazy_static!{
     };
 }
 
-#[derive(Debug)]
-pub struct AsmErr{
-    pub line_number: u32,
-    pub message: String,
-}
-
-impl AsmErr{
-    fn new(line_number: u32, message: &str) -> AsmErr{
-        AsmErr{
-            line_number,
-            message: String::from(message)
-        }
-    }
-}
-
-impl Error for AsmErr{ }
-impl fmt::Display for AsmErr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Assembly failed!\nline: {}\t{}", self.line_number, self.message)
-    }
-}
-
 pub fn process_command_args(args: &[String]) -> Result<(), AsmErr>{
     for arg in args.iter(){
         let file_content = match fs::read_to_string(&arg){
@@ -81,28 +83,97 @@ pub fn process_command_args(args: &[String]) -> Result<(), AsmErr>{
     return Ok(())
 }
 
-fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
-    let mut machine_codes = vec![];
-    for (index, line) in filestring.lines().enumerate() {
-        if line.starts_with("//") || line.contains(":") || line.is_empty() {
-            continue;
+/// preprocess_assembly
+/// go through the lines of the assembly file, getting the labels and
+/// adding the assembly code/label into the map
+///
+/// # Argument
+/// * `filestring` - string that contains all the assembly.
+///
+/// # Return type
+/// * `HashMap<u32, String>` - hashmap of line number/assembly
+///
+/// # Error condition
+/// NONE
+fn preprocess_assembly(filestring: &String)->Vec<String>{
+    let mut assembly = vec![];
+    for line in filestring.lines(){
+        if line.starts_with("//") {
+            continue
         }
 
-        if DEBUG{
-            println!("processing line {}: {}", index+1, line);
-        }
+        let words:Vec<&str> = line.split(" ").collect();
 
-        let processed_line = match process_line(line){
-            Ok(l) => l,
-            Err(msg) => {
-                return Err(AsmErr::new((index + 1)as u32,
-                                       format!("{}\n{}", line, msg).as_str()));
+        let mut comment_idx= -1;
+        for (idx, &word) in words.iter().enumerate(){
+            if word.starts_with("//") {
+                comment_idx = idx as i8;
             }
         };
-        machine_codes.push(processed_line);
+
+        let line = String::from(if comment_idx == -1{
+            String::from(line)
+        }else{
+            String::from(&line[..(comment_idx as usize)])
+        });
+
+        if line.contains(":") {
+            assembly.push(line);
+        }else if line.starts_with("BR") || line.starts_with("BA"){
+            let branch_and_label:Vec<&str> = line.split(" ").collect();
+
+
+            assembly.push(format!("MOV {}", branch_and_label[1]));
+            assembly.push(String::from(branch_and_label[0]));
+        }else{
+            assembly.push(String::from(line));
+        }
     }
 
-    let processed_code = machine_codes.join("\n");
+    assembly
+}
+
+fn transform_processed_assembly(assembly: Vec<String>) -> LinkedHashMap<String, u32>{
+    let mut map = LinkedHashMap::new();
+
+    let mut line_num = 0;
+    for (idx, line) in assembly.into_iter().enumerate(){
+        if line.contains(":"){  //if label, dont give it a line number
+            map.insert(line, 0);
+        }else{
+            map.insert(line, line_num);
+            line_num += 1;
+        }
+    }
+
+    map
+}
+
+fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
+    //preprocess the file so that all the code & labels are in place
+    let preprocessed_assembly = preprocess_assembly(&filestring);
+    let lined_assembly = transform_processed_assembly(preprocessed_assembly);
+
+    let machine_codes:Vec<String> = vec![];
+    for (line, line_num) in lined_assembly.into_iter(){
+        let processed_line = match process_line(&line){
+            Ok(l) => l,
+            Err(e) => return Err(AsmErr::new(line_num,
+                e
+            )),
+        };
+
+
+    }
+
+
+
+
+
+
+    //let processed_code = machine_codes.join("\n");
+
+    let processed_code = "";
     let filename = filename.replace(".s", ".m");
     match fs::write(filename, processed_code){
         Err(_) => return Err(AsmErr::new(0, "failed to write file to disk!")),
@@ -113,8 +184,6 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
 }
 
 fn process_line(line: &str)->Result<String, &'static str>{
-    let mut processed_line = String::new();
-
     let words:Vec<&str> = line.split(" ").collect();    //get all the components of the line
     let instruction = words[0].to_ascii_uppercase();
     let &machine_code = match INSTRUCTION.get(instruction.as_str()){
@@ -122,10 +191,16 @@ fn process_line(line: &str)->Result<String, &'static str>{
         None => return Err("invalid assembly instruction!"),
     };
 
+    //single instructions that might take a label
+    if (instruction == "BA" || instruction == "BR") && words.len() > 1{ //labeled
+        return process_branch(line);
+    }
+
+    let mut processed_line = String::new();
     processed_line.push_str(machine_code);
 
-    //handle single argument instructions first
-    if instruction == "CLR" || instruction  == "BA" || instruction == "BR" || instruction == "HALT"{
+    //easy single argument instructions
+    if instruction == "CLR" || instruction == "HALT" || instruction == "BA" || instruction == "BR"{
         return Ok(processed_line);
     }
 
@@ -229,4 +304,11 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
 
         _ => panic!("NANI?????"),    //this shouldnt happen
     }
+}
+
+
+/// process_branch
+///
+fn process_branch(line: &str)->Result<String, &'static str>{
+    return Ok(String::new())
 }
