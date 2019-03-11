@@ -61,17 +61,23 @@ wrt r6
 //if R <= N then ...
 rdr r0      //MSB{R}
 cmp r2      //MSB{N}
-bne #4     //skip the lsb check
+ble #3      //skip to else body 
 
-rdr r1      //LSB{R}
-cmp r3      //LSB{N}
-ble #5      //if LSB{R} <= LSB{N} skip the else step
-mov #4
+mov #9      //skipping into else body
 br
 
-rdr r0      //MSB{R}
-cmp r2      //MSB{N}
-ble #3      //if MSB{R} <= MSB{R} skip the else step
+// R_MSB <= N_MSB 
+rdr r2      //MSB{N}
+cmp r0      //MSB{R}
+beq #3     //check LSB. since R[0] <= N[0]; if R == N, we must check LSB
+
+mov #6
+br
+
+// R_MSB == N_MSB
+rdr r1      //LSB{R}
+cmp r3      //LSB{N}
+ble #3      //if LSB{R} <= LSB{N}, then if step
 
 //else body, won't do anything cuz r7 | r6 are zero by default
 mov #18    //skip to shift
@@ -110,10 +116,10 @@ rdr r2      //r2 << 1
 lsl #1     //r2 << 1
 wrt r2      //r2 << 1
 
-mov #0x7f  // r3 & #0x7f
+mov #0x80  // r3 & #0x7f
 and r3      // r3 & #0x7f
 lsr #7     // lsr $acc #7
-and r2      // and $acc r2 (complete the shift)
+orr r2      // and $acc r2 (complete the shift)
 wrt r2      // write to r2
 rdr r3      // r3 << 1
 lsl #1     // r3 << 1
@@ -139,7 +145,7 @@ mov #2
 cmp r5
 ble #3 // exit loop
 
-mov #-56 // TODO loop
+mov #-58  // TODO loop
 br
 
 // loop end
