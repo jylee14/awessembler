@@ -10,10 +10,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fa7489c9-39fb-466c-9064-f37f8e372c83" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inverse.m" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -36,14 +32,10 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/lib.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="425">
-              <caret line="157" column="9" lean-forward="true" selection-start-line="157" selection-start-column="9" selection-end-line="157" selection-end-column="9" />
+            <state relative-caret-position="372">
+              <caret line="149" column="39" selection-start-line="149" selection-start-column="39" selection-end-line="149" selection-end-column="39" />
               <folding>
-                <element signature="e#827#2087#0" />
                 <element signature="e#2155#2479#0" />
-                <element signature="e#4499#7370#0" />
-                <element signature="e#9282#9283#0" expanded="true" />
-                <element signature="e#9313#9314#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -81,6 +73,7 @@
       <find>unwrap</find>
       <find>converting</find>
       <find>invalid assembly</find>
+      <find>ASM #</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -102,7 +95,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" fullScreen="true">
+  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
     <option name="width" value="1280" />
     <option name="height" value="800" />
   </component>
@@ -175,15 +168,15 @@
       <workItem from="1551906571036" duration="1859000" />
       <workItem from="1551909215333" duration="1815000" />
       <workItem from="1551920597912" duration="1427000" />
-      <workItem from="1552337491766" duration="6495000" />
+      <workItem from="1552337491766" duration="10104000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="32596000" />
+    <option name="totallyTimeSpent" value="36205000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1280" height="800" extended-state="0" />
+    <frame x="0" y="0" width="1280" height="800" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" weight="0.15105008" />
@@ -204,7 +197,7 @@
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Cargo" order="3" />
       <window_info anchor="right" id="Database" order="4" />
-      <window_info active="true" anchor="right" id="Terminal" order="5" visible="true" weight="0.36995155" />
+      <window_info active="true" anchor="right" id="Terminal" order="5" visible="true" weight="0.30613893" />
     </layout>
   </component>
   <component name="UnknownFeatures">
@@ -281,14 +274,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/lib.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="425">
-          <caret line="157" column="9" lean-forward="true" selection-start-line="157" selection-start-column="9" selection-end-line="157" selection-end-column="9" />
+        <state relative-caret-position="372">
+          <caret line="149" column="39" selection-start-line="149" selection-start-column="39" selection-end-line="149" selection-end-column="39" />
           <folding>
-            <element signature="e#827#2087#0" />
             <element signature="e#2155#2479#0" />
-            <element signature="e#4499#7370#0" />
-            <element signature="e#9282#9283#0" expanded="true" />
-            <element signature="e#9313#9314#0" expanded="true" />
           </folding>
         </state>
       </provider>
