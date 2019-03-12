@@ -10,6 +10,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fa7489c9-39fb-466c-9064-f37f8e372c83" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inverse.s" beforeDir="false" afterPath="$PROJECT_DIR$/inverse.s" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -32,10 +34,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/lib.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="372">
-              <caret line="149" column="39" selection-start-line="149" selection-start-column="39" selection-end-line="149" selection-end-column="39" />
+            <state relative-caret-position="368">
+              <caret line="160" column="42" selection-start-line="160" selection-start-column="42" selection-end-line="160" selection-end-column="42" />
               <folding>
-                <element signature="e#2155#2479#0" />
+                <element signature="e#827#2087#0" />
+                <element signature="e#6522#7597#0" />
+                <element signature="e#7666#10537#0" />
               </folding>
             </state>
           </provider>
@@ -74,6 +78,8 @@
       <find>converting</find>
       <find>invalid assembly</find>
       <find>ASM #</find>
+      <find>PROCESSING</find>
+      <find>mov</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -168,12 +174,12 @@
       <workItem from="1551906571036" duration="1859000" />
       <workItem from="1551909215333" duration="1815000" />
       <workItem from="1551920597912" duration="1427000" />
-      <workItem from="1552337491766" duration="10104000" />
+      <workItem from="1552337491766" duration="14278000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="36205000" />
+    <option name="totallyTimeSpent" value="40379000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1280" height="800" extended-state="6" />
@@ -197,7 +203,7 @@
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Cargo" order="3" />
       <window_info anchor="right" id="Database" order="4" />
-      <window_info active="true" anchor="right" id="Terminal" order="5" visible="true" weight="0.30613893" />
+      <window_info anchor="right" id="Terminal" order="5" weight="0.30613893" />
     </layout>
   </component>
   <component name="UnknownFeatures">
@@ -236,21 +242,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libcore/str/mod.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="235">
-          <caret line="2908" column="11" selection-start-line="2908" selection-start-column="11" selection-end-line="2908" selection-end-column="11" />
-          <folding>
-            <element signature="e#91042#91043#0" expanded="true" />
-            <element signature="e#91082#91083#0" expanded="true" />
-            <element signature="e#91565#91566#0" expanded="true" />
-            <element signature="e#91602#91603#0" expanded="true" />
-            <element signature="e#113352#113353#0" expanded="true" />
-            <element signature="e#113413#113414#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/asm_error/mod.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -272,12 +263,29 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libcore/str/mod.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="50814">
+          <caret line="3558" column="11" selection-start-line="3558" selection-start-column="11" selection-end-line="3558" selection-end-column="11" />
+          <folding>
+            <element signature="e#91042#91043#0" expanded="true" />
+            <element signature="e#91082#91083#0" expanded="true" />
+            <element signature="e#91565#91566#0" expanded="true" />
+            <element signature="e#91602#91603#0" expanded="true" />
+            <element signature="e#113352#113353#0" expanded="true" />
+            <element signature="e#113413#113414#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/lib.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="372">
-          <caret line="149" column="39" selection-start-line="149" selection-start-column="39" selection-end-line="149" selection-end-column="39" />
+        <state relative-caret-position="368">
+          <caret line="160" column="42" selection-start-line="160" selection-start-column="42" selection-end-line="160" selection-end-column="42" />
           <folding>
-            <element signature="e#2155#2479#0" />
+            <element signature="e#827#2087#0" />
+            <element signature="e#6522#7597#0" />
+            <element signature="e#7666#10537#0" />
           </folding>
         </state>
       </provider>
