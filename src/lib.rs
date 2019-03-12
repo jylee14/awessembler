@@ -31,7 +31,7 @@ impl fmt::Display for AsmErr {
     }
 }
 
-const DEBUG:bool = true;
+const DEBUG:bool = false;
 
 //asm -> (machine code, type) map
 lazy_static!{
@@ -70,6 +70,19 @@ lazy_static!{
     };
 }
 
+/// process_command_args
+/// public facing function. called by the main to parse commandline
+/// it will take each commandline argument and process the file, writing the
+/// resulting machine code to the disk upon successful conversion.
+///
+/// # Arguments
+/// * `args` - list of assembly file names
+///
+/// # Return types
+/// * `Result<(), AsmErr>`
+///
+/// # Error condition
+/// if passed in filename does NOT exist in the disk
 pub fn process_command_args(args: &[String]) -> Result<(), AsmErr>{
     for arg in args.iter(){
         let file_content = match fs::read_to_string(&arg){
@@ -85,6 +98,20 @@ pub fn process_command_args(args: &[String]) -> Result<(), AsmErr>{
     return Ok(())
 }
 
+/// process_file
+/// goes through each line in the assembly file and converts it to machine code file
+/// & writes the result to disk
+///
+/// # Arguments
+/// * `filename` - filename
+/// * `filestring` - a long string that is the content of the assembly file
+///
+/// # Return Type
+/// Result<(), AsmErr>
+///
+/// # Error condition
+/// assembly file processing fails
+/// writing to disk fails
 fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     //preprocess the file so that all the code & labels are in place
     let preprocessed_assembly = preprocess_assembly(&filestring);
@@ -222,6 +249,18 @@ fn preprocess_assembly(filestring: &String)->Vec<String>{
     assembly
 }
 
+/// transform_processed_assembly
+/// assign line numbers to each assembly or label
+///
+/// # Argument
+/// * `assembly` - vector of strings where each element is a line of assembly code
+///
+/// # Return type
+/// * `LinkedHashMap<u32, String>` - line number ordered hashmap of assembly instructions
+/// * `HashMap<String, u32>` - label - line number hash map
+///
+/// # Error condition
+/// NONE
 fn transform_processed_assembly(assembly: Vec<String>) -> (LinkedHashMap<u32, String>, HashMap<String, u32>){
     let mut labels = HashMap::new();
     let mut map = LinkedHashMap::new();
@@ -244,6 +283,22 @@ fn transform_processed_assembly(assembly: Vec<String>) -> (LinkedHashMap<u32, St
     (map, labels)
 }
 
+/// process_line
+/// process a SINGLE line of assembly instruction
+/// goes through the assembly map, figures out its machine code
+/// & passes the argument to process_args function
+///
+/// # Argument
+/// * `line` - assembly line to process
+///
+/// # Return Type
+/// * `Result<String, &'static str>`
+/// Result holding properly processed line (9 bit machine code) or
+/// static string stating failure reason
+///
+/// # Error condition
+/// invalid assembly instruction passed in
+/// invalid arguments passed in
 fn process_line(line: &str)->Result<String, &'static str>{
     let words:Vec<&str> = line.split(" ").collect();    //get all the components of the line
     let instruction = words[0].to_ascii_uppercase();
@@ -278,6 +333,22 @@ fn process_line(line: &str)->Result<String, &'static str>{
     Ok(processed_line)
 }
 
+/// process_arg
+/// process args of the given assembly code and truncates to appropriate length
+///
+/// # Argument
+/// * `asm` - assembly instruction (line)
+/// * `arg` - arguments to asm. in byte array
+///
+/// # Return Type
+/// * `Result<String, &'static str>`
+/// Result holding properly processed args (in bitstring) or
+/// static string stating failure reason
+///
+/// # Error condition
+/// invalid use of assembly instruction
+/// number too large
+/// syntactic errors
 fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
     let arg_type = INSTRUCTION.get(asm).unwrap().1;  //should NEVER fail here
     let mut number;
