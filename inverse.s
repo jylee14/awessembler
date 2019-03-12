@@ -14,28 +14,29 @@ rdr r0      //load r0 value
 cmp $zero   //check if r0 is zero
 beq #3     //skip the LSB check
 
-mov #14    //this is a hack
-br         //because of 4 bit signed limit
+br init
 
 rdr r1      //load r1 value
 cmp $zero   //check if r1 is zero
 beq #3     //skip the finish
 
-br init 
+br init
 
 //stop if 0 is passed in
+mov #10
+wrt r7
 mov #0xff   //load max value into acc
 str [r7]    //load max value into memloc #9
-mov #8      //load memloc 8 into acc
+mov #11      //load memloc 8 into acc
 wrt r7      //load memloc 8 into r6
 mov #0xff   //load max value into acc
 str [r7]    //load max value into memloc #8
 
-br END
+br end
 
 //initialize values
-INIT: 
-mov #0     //MSB (0x0	0)
+init:
+mov #0     //MSB (0x0    0)
 wrt r2      //r2 is MSB
 mov #1     //LSB (0x01)
 wrt r3      //r3 is LSB
@@ -58,14 +59,14 @@ wrt r6
 
 //FOR_LOOP:
 //if R <= N then ...
-LOOP:
+loop:
 rdr r0      //MSB{R}
 cmp r2      //MSB{N}
-ble #3      //skip to else body 
+ble #3      //skip to else body
 
-br ELSE
+br else
 
-// R_MSB <= N_MSB 
+// R_MSB <= N_MSB
 rdr r2      //MSB{N}
 cmp r0      //MSB{R}
 beq #3     //check LSB. since R[0] <= N[0]; if R == N, we must check LSB
@@ -79,8 +80,8 @@ cmp r3      //LSB{N}
 ble #3      //if LSB{R} <= LSB{N}, then if step
 
 //else body, won't do anything cuz r7 | r6 are zero by default
-ELSE:
-br SHIFT   //byeeeeee
+else:
+br shift    //byeeeeee
 
 mov #0     //compare r5 against 0
 cmp r5      //if !=, then we work on LSB
@@ -111,7 +112,7 @@ wrt r2
 
 // SHIFTING HERE, END IF
 //N << 1
-SHIFT:
+shift:
 rdr r2      //r2 << 1
 lsl #1     //r2 << 1
 wrt r2      //r2 << 1
@@ -145,11 +146,9 @@ mov #2
 cmp r5
 ble #3 // exit loop
 
-br LOOP
-
+br loop
 // loop end
 // write to memory the results
-END:
 mov #10
 wrt r0
 rdr r7
@@ -160,6 +159,6 @@ wrt r0
 rdr r6
 str [r0]
 
+end: 
 halt
 halt
-

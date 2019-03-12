@@ -85,89 +85,6 @@ pub fn process_command_args(args: &[String]) -> Result<(), AsmErr>{
     return Ok(())
 }
 
-/// preprocess_assembly
-/// go through the lines of the assembly file, getting the labels and
-/// adding the assembly code/label into the map
-///
-/// # Argument
-/// * `filestring` - string that contains all the assembly.
-///
-/// # Return type
-/// * `HashMap<u32, String>` - hashmap of line number/assembly
-///
-/// # Error condition
-/// NONE
-fn preprocess_assembly(filestring: &String)->Vec<String>{
-    let mut assembly = vec![];
-    for line in filestring.lines(){
-        if line.starts_with("//") {
-            continue
-        }
-
-        let line = line.to_ascii_uppercase();
-        let words = line.as_bytes();
-
-        let mut comment_idx= -1;
-        'inner: for (idx, &word) in words.iter().enumerate(){
-            if word == b'/' {
-                comment_idx = idx as i8;
-                break 'inner;
-            }
-        };
-
-        let line = String::from(if comment_idx == -1{
-            &line
-        }else{
-            &line[..(comment_idx as usize)]
-        });
-
-        let line = String::from(line.trim());
-        if line.contains(":") {
-            if DEBUG{
-                eprintln!("LABEL FOUND: {}", line);
-            }
-            assembly.push(line);
-        }else {
-            if line.starts_with("BR") {
-                let branch_and_label: Vec<&str> = line.split(" ").collect();
-                if branch_and_label.len() > 1 {
-                    let labeled_move = format!("MOV {}", branch_and_label[1]);
-                    if DEBUG {
-                        eprintln!("labeled jump: {}", labeled_move);
-                    }
-                    assembly.push(labeled_move);
-                }
-                assembly.push(String::from("BR"));
-            } else {
-                assembly.push(String::from(line));
-            }
-        }
-    }
-
-    assembly
-}
-
-fn transform_processed_assembly(assembly: Vec<String>) -> (LinkedHashMap<u32, String>, HashMap<String, u32>){
-    let mut labels = HashMap::new();
-    let mut map = LinkedHashMap::new();
-
-    let mut line_num = 0;
-    for line in assembly.into_iter(){
-        if line.is_empty(){
-            continue;
-        }
-
-        if line.contains(":"){  //if label, dont give it a line number
-            labels.insert(line, line_num-1);
-        }else{
-            map.insert(line_num, line);
-            line_num += 1;
-        }
-    }
-
-    (map, labels)
-}
-
 fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     //preprocess the file so that all the code & labels are in place
     let preprocessed_assembly = preprocess_assembly(&filestring);
@@ -241,6 +158,90 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     };
 
     Ok(())
+}
+
+/// preprocess_assembly
+/// go through the lines of the assembly file, getting the labels and
+/// adding the assembly code/label into the map
+///
+/// # Argument
+/// * `filestring` - string that contains all the assembly.
+///
+/// # Return type
+/// * `HashMap<u32, String>` - hashmap of line number/assembly
+///
+/// # Error condition
+/// NONE
+fn preprocess_assembly(filestring: &String)->Vec<String>{
+    let mut assembly = vec![];
+    for line in filestring.lines(){
+        if line.starts_with("//") {
+            continue
+        }
+
+        let line = line.to_ascii_uppercase();
+        let words = line.as_bytes();
+
+        let mut comment_idx= -1;
+        'inner: for (idx, &word) in words.iter().enumerate(){
+            if word == b'/' {
+                comment_idx = idx as i8;
+                break 'inner;
+            }
+        };
+
+        let line = String::from(if comment_idx == -1{
+            &line
+        }else{
+            &line[..(comment_idx as usize)]
+        });
+
+        let line = String::from(line.trim());
+        if line.contains(":") {
+            if DEBUG{
+                eprintln!("LABEL FOUND: {}", line);
+            }
+            assembly.push(line);
+        }else {
+            if line.starts_with("BR") {
+                let branch_and_label: Vec<&str> = line.split(" ").collect();
+                if branch_and_label.len() > 1 {
+                    let labeled_move = format!("MOV {}", branch_and_label[1]);
+                    if DEBUG {
+                        eprintln!("labeled jump: {}", labeled_move);
+                    }
+                    assembly.push(labeled_move);
+                }
+                assembly.push(String::from("BR"));
+            } else {
+                assembly.push(String::from(line));
+            }
+        }
+    }
+
+    assembly
+}
+
+fn transform_processed_assembly(assembly: Vec<String>) -> (LinkedHashMap<u32, String>, HashMap<String, u32>){
+    let mut labels = HashMap::new();
+    let mut map = LinkedHashMap::new();
+
+    let mut line_num = 0;
+    for line in assembly.into_iter(){
+        if line.is_empty(){
+            continue;
+        }
+
+        //if label, dont give it a line number and dont add it to the map
+        if line.contains(":"){
+            labels.insert(line, line_num-1);
+        }else{
+            map.insert(line_num, line);
+            line_num += 1;
+        }
+    }
+
+    (map, labels)
 }
 
 fn process_line(line: &str)->Result<String, &'static str>{
