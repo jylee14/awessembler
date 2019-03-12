@@ -176,7 +176,7 @@ wrt r3
 
 // MSB{res} += LSB{temp} + carry
 rdr r2
-add r6
+adc r6
 wrt r2
 
 // end_if_num_ge:
@@ -200,11 +200,16 @@ wrt r3
 
 // shift bit right 2
 rdr r4
+lsl #6
+wrt r6
+
+rdr r4
 lsr #2
 wrt r4
 
 rdr r5
 lsr #2
+orr r6
 wrt r5
 
 // bit_loop_cond:
