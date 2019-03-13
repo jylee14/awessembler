@@ -120,21 +120,23 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     let mut machine_codes:Vec<String> = vec![];
     for (line_num, line) in lines_asm.iter(){
         if DEBUG{
-            //eprintln!("PROCESSING: {}", line);
+            //eprintln!("PROCESSING:\t{}", line);
         }
 
         if line.contains(":"){
             continue;
         }
 
-        if line.contains("MOV"){ //does this mov have a label or a constant?
-            let mov_words:Vec<&str> = line.split(" ").collect();
-            let mov_label = mov_words[1];   //this is the label
+        //does this mov have a label or a constant?
+        if line.contains("MOV") || (!line.contains("BR") && line.starts_with("B")){
+            let asm_words:Vec<&str> = line.split(" ").collect();
+            let asm_inst = asm_words[0];    //this is the instruction
+            let asm_label = asm_words[1];   //this is the label
 
             let processed_line;
             if line.contains("#"){
                 if DEBUG{
-                    eprintln!("MOV LINE: {}", line);
+                    eprintln!("LINE:\t\t{}", line);
                 }
 
                 processed_line = match process_line(line) {
@@ -143,30 +145,34 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
                 };
             }else {
                 if DEBUG{
-                    eprintln!("LABELED MOV LINE: {}", line);
+                    eprintln!("LABELED LINE:\t{}", line);
                 }
 
-                let mov_label = format!("{}:", mov_label);
-                let label_line_num = match labels_lines.get(&mov_label) {
+                let asm_label = format!("{}:", asm_label);
+                let label_line_num = match labels_lines.get(&asm_label) {
                     Some(&l) => l as u32,
                     None => return Err(AsmErr::new(line_num + 1, "Invalid label!")),
                 };
 
-                let line_diff = label_line_num as i32 - *line_num as i32;
-                let mov_inst = format!("MOV #{}", line_diff);   //mov with appropriate distance set
-
-                if DEBUG {
-                    eprintln!("new mov inst: {}", mov_inst);
+                let mut line_diff = label_line_num as i32 - *line_num as i32;
+                if line.starts_with("B"){
+                    line_diff += 1;
                 }
 
-                processed_line = match process_line(&mov_inst) {
+                let new_inst = format!("{} #{}", asm_inst, line_diff);   //mov with appropriate distance set
+
+                if DEBUG {
+                    eprintln!("new inst:\t{}", new_inst);
+                }
+
+                processed_line = match process_line(&new_inst) {
                     Ok(l) => l,
                     Err(e) => return Err(AsmErr::new(*line_num, e)),
                 };
             }
 
             machine_codes.push(processed_line);
-        }else {
+        }else{
             let processed_line = match process_line(&line) {
                 Ok(l) => l,
                 Err(e) => return Err(AsmErr::new(*line_num, e)),
@@ -226,7 +232,7 @@ fn preprocess_assembly(filestring: &String)->Vec<String>{
         let line = String::from(line.trim());
         if line.contains(":") {
             if DEBUG{
-                eprintln!("LABEL FOUND: {}", line);
+                eprintln!("LABEL FOUND:\t{}", line);
             }
             assembly.push(line);
         }else {
@@ -235,12 +241,23 @@ fn preprocess_assembly(filestring: &String)->Vec<String>{
                 if branch_and_label.len() > 1 {
                     let labeled_move = format!("MOV {}", branch_and_label[1]);
                     if DEBUG {
-                        eprintln!("labeled jump: {}", labeled_move);
+                        eprintln!("labeled MOV:\t{}", labeled_move);
                     }
                     assembly.push(labeled_move);
                 }
                 assembly.push(String::from("BR"));
-            } else {
+            }else if line.starts_with("B") {
+                let branch_and_label: Vec<&str> = line.split(" ").collect();
+                if branch_and_label[1].starts_with("#") {
+                    assembly.push(line);
+                }else{
+                    let labeled_jump = format!("{} {}", branch_and_label[0], branch_and_label[1]);
+                    if DEBUG {
+                        eprintln!("labeled jump:\t{}", labeled_jump);
+                    }
+                    assembly.push(labeled_jump);
+                }
+            }else {
                 assembly.push(String::from(line));
             }
         }
@@ -373,6 +390,10 @@ fn process_arg(asm: &str, arg: &[u8])->Result<String, &'static str>{
                 Ok(v) => v,
                 Err(_) => return Err("invalid number!")
             } as i8;
+
+            if asm.contains("B") && (int_value > 7 || int_value < -8){
+                return Err("Constant too large for instruction!");
+            }
 
             let binary_rep = format!("{number:>0width$b}", number = int_value, width=8);
             return Ok(binary_rep);
