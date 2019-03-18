@@ -12,31 +12,33 @@ wrt r1      //write LSB to r1
 //check for zero
 rdr r0      //load r0 value
 cmp $zero   //check if r0 is zero
-beq #3     //skip the LSB check
+beq LSB_ZERO_CHECK     //skip the LSB check
 
-mov #14    //this is a hack
-br          //because of 4 bit signed limit
+br init
 
+LSB_ZERO_CHECK:
 rdr r1      //load r1 value
 cmp $zero   //check if r1 is zero
-beq #3     //skip the finish
+beq ZERO
 
-mov #9     //this is a hack
-br          //becasue of 4 bit signed limit
+br init
 
 //stop if 0 is passed in
+ZERO:
+mov #10
+wrt r7
 mov #0xff   //load max value into acc
 str [r7]    //load max value into memloc #9
-mov #8      //load memloc 8 into acc
+mov #11      //load memloc 8 into acc
 wrt r7      //load memloc 8 into r6
 mov #0xff   //load max value into acc
 str [r7]    //load max value into memloc #8
 
-mov #60   //offset from here to end (num(inst) - 1)
-br
+br end
 
 //initialize values
-mov #0     //MSB (0x0	0)
+init:
+mov #0     //MSB (0x0    0)
 wrt r2      //r2 is MSB
 mov #1     //LSB (0x01)
 wrt r3      //r3 is LSB
@@ -59,40 +61,42 @@ wrt r6
 
 //FOR_LOOP:
 //if R <= N then ...
+loop:
 rdr r0      //MSB{R}
 cmp r2      //MSB{N}
-ble #3      //skip to else body 
+ble MSB_CHECK      //skip to else body
 
-mov #9      //skipping into else body
-br
+br else
 
-// R_MSB <= N_MSB 
+// R_MSB <= N_MSB
+MSB_CHECK:
 rdr r2      //MSB{N}
 cmp r0      //MSB{R}
-beq #3     //check LSB. since R[0] <= N[0]; if R == N, we must check LSB
+beq LSB_CHECK     //check LSB. since R[0] <= N[0]; if R == N, we must check LSB
 
-mov #6
-br
+br IF
 
 // R_MSB == N_MSB
+LSB_CHECK:
 rdr r1      //LSB{R}
 cmp r3      //LSB{N}
 ble #3      //if LSB{R} <= LSB{N}, then if step
 
 //else body, won't do anything cuz r7 | r6 are zero by default
-mov #18    //skip to shift
-br          //byeeeeee
+else:
+br shift    //byeeeeee
 
+IF:
 mov #0     //compare r5 against 0
 cmp r5      //if !=, then we work on LSB
-bne #6     //skip over MSB setting
+bne LSB_SET     //skip over MSB setting
 
 rdr r4
 orr r7
 wrt r7
-mov #4
-br         //skip over LSB setting
+br SUB        //skip over LSB setting
 
+LSB_SET:
 rdr r4
 orr r6
 wrt r6
@@ -101,6 +105,7 @@ wrt r6
 
 //N := N - R
 //N[0] := N[0] - R[0]
+SUB:
 rdr r3
 sub r1
 wrt r3
@@ -112,6 +117,7 @@ wrt r2
 
 // SHIFTING HERE, END IF
 //N << 1
+shift:
 rdr r2      //r2 << 1
 lsl #1     //r2 << 1
 wrt r2      //r2 << 1
@@ -143,13 +149,13 @@ wrt r4
 // if counter > 1 (or 1 < counter, or 2 <= counter) exit loop
 mov #2
 cmp r5
-ble #3 // exit loop
+ble EXIT_LOOP // exit loop
 
-mov #-58  // TODO loop
-br
+br loop
 
 // loop end
 // write to memory the results
+EXIT_LOOP:
 mov #10
 wrt r0
 rdr r7
@@ -160,6 +166,5 @@ wrt r0
 rdr r6
 str [r0]
 
+end:
 halt
-halt
-

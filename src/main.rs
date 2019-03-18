@@ -7,7 +7,6 @@ fn main() {
         return ;
     }
 
-
     let args = args.into_iter()
         .filter(|x| x.contains(".s"))
         .collect::<Vec<String>>();
