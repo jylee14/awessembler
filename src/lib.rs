@@ -13,13 +13,15 @@ use linked_hash_map::LinkedHashMap;
 pub struct AsmErr {
     pub line_number: u32,
     pub message: String,
+    pub line: Option<String>,
 }
 
 impl AsmErr {
-    fn new(line_number: u32, message: &str) -> AsmErr {
+    fn new(line_number: u32, message: &str, line: Option<String>) -> AsmErr {
         AsmErr {
             line_number,
-            message: String::from(message)
+            message: String::from(message),
+            line,
         }
     }
 }
@@ -27,7 +29,14 @@ impl AsmErr {
 impl Error for AsmErr{ }
 impl fmt::Display for AsmErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Assembly failed!\nline: {}\t{}", self.line_number, self.message)
+
+        write!(f, "Assembly failed!\nline: {}\t{}\n{}",
+               self.line_number, self.message,
+               if let Some(line) = &self.line{
+                   line
+               }else{
+                   ""
+               })
     }
 }
 
@@ -88,7 +97,8 @@ pub fn process_command_args(args: &[String]) -> Result<(), AsmErr>{
         let file_content = match fs::read_to_string(&arg){
             Ok(str) => str,
             Err(_) => return Err(AsmErr::new(0,
-                                             "failed to read assembly file!")),
+                                             "failed to read assembly file!",
+                                             None)),
         };
 
         let file_content = file_content.to_ascii_uppercase();
@@ -141,7 +151,8 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
 
                 processed_line = match process_line(line) {
                     Ok(l) => l,
-                    Err(e) => return Err(AsmErr::new(*line_num, e)),
+                    Err(e) => return Err(AsmErr::new(*line_num,
+                                                     e, Some(line.to_owned()))),
                 };
             }else {
                 if DEBUG{
@@ -151,7 +162,9 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
                 let asm_label = format!("{}:", asm_label);
                 let label_line_num = match labels_lines.get(&asm_label) {
                     Some(&l) => l as u32,
-                    None => return Err(AsmErr::new(line_num + 1, "Invalid label!")),
+                    None => return Err(AsmErr::new(line_num + 1,
+                                                   "Invalid label!",
+                                                   Some(line.to_owned()))),
                 };
 
                 let mut line_diff = label_line_num as i32 - *line_num as i32;
@@ -167,7 +180,8 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
 
                 processed_line = match process_line(&new_inst) {
                     Ok(l) => l,
-                    Err(e) => return Err(AsmErr::new(*line_num, e)),
+                    Err(e) => return Err(AsmErr::new(*line_num,
+                                                     e, Some(line.to_owned()))),
                 };
             }
 
@@ -175,7 +189,8 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
         }else{
             let processed_line = match process_line(&line) {
                 Ok(l) => l,
-                Err(e) => return Err(AsmErr::new(*line_num, e)),
+                Err(e) => return Err(AsmErr::new(*line_num,
+                                                 e, Some(line.to_owned()))),
             };
 
             machine_codes.push(processed_line);
@@ -186,7 +201,7 @@ fn process_file(filename: &String, filestring: String)->Result<(), AsmErr>{
     let processed_code = machine_codes.join("\n");
     let filename = filename.replace(".s", ".m");
     match fs::write(filename, processed_code){
-        Err(_) => return Err(AsmErr::new(0, "failed to write file to disk!")),
+        Err(_) => return Err(AsmErr::new(0, "failed to write file to disk!", None)),
         _ => (),
     };
 
