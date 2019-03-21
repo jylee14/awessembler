@@ -44,10 +44,23 @@ br zero_dividend
 not_zero_dividend:
 mov #1                  //lets check if divisor is 1
 cmp r2
-bne loop
+bne check_equal
 
 br divisor_is_one
 
+//check if dividend == divisor
+check_equal:
+mov #0
+cmp r0
+bne init
+
+rdr r1
+cmp r2
+bne init
+
+br return_one
+
+init:
 mov #7     //for setting q[i] = 0/1
 wrt r3
 
@@ -276,6 +289,22 @@ mov #0
 str [r7]
 
 br done
+
+return_one:
+mov #4
+wrt r7
+mov #0
+str [r7]
+
+mov #5
+wrt r7
+mov #0x1
+str [r7]
+
+mov #6
+wrt r7
+mov #0
+str [r7]
 
 done:
 halt
