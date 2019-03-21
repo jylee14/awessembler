@@ -60,16 +60,17 @@ wrt r4
 // bit >>= 2
 
 // go to msb_loop_cond
+// br msb_loop_cond
 mov #4
 br
 
-// msb_loop:
+msb_loop:
 // MSB{bit} = MSB{BIT >> 2}
 rdr r4
 lsr #2
 wrt r4
 
-// msb_loop_cond:
+msb_loop_cond:
 // if MSB{bit} > MSB{num}
 rdr r4
 cmp r0
@@ -80,36 +81,33 @@ bgt #-5 // go to msb_loop
 rdr r4
 cmp $zero 
 beq #3 // if MSB is 0, need to shift into LSB
-mov #12 // else end loop
-br
+br end_shift_loop
 
 // set the bit in the LSB
 mov #1
 lsl #6
 wrt r5
-mov #4 // go to lsb_shift_loop_cond
-br 
+br lsb_shift_loop_cond
 
-// lsb_shift_loop:
+lsb_shift_loop:
 rdr r5
 lsr #2
 wrt r5
 
-// lsb_shift_loop_cond:
+lsb_shift_loop_cond:
 
 // if LSB{bit} > LSB{num} 
 rdr r5
 cmp r1
 bgt #-5 // go to lsb_shift_loop
 
-// end_shift_loop:
+end_shift_loop:
 
 // SECOND LOOP
 
-mov #47
-br // go to bit_loop_cond:
+br bit_loop_cond
 
-// bit_loop:
+bit_loop:
 // temp = res + bit
 // LSB{temp} = LSB{res} + LSB{bit}
 rdr r3
@@ -126,15 +124,13 @@ wrt r6
 rdr r0
 cmp r6
 ble #3 // continue if msb is <=
-mov #11 // go to if_num_ge
-br
+br if_num_ge
 
 // if MSB{num} != MSB{temp} num must be less
 rdr r0
 cmp r6
 beq #3 // continue if numbers are same
-mov #23 // go to end_if_num_ge, num must be less
-br
+br end_if_num_ge
 
 // if LSB{num} >= LSB{temp}
 rdr r7
@@ -142,10 +138,9 @@ cmp r1
 ble #3 // go to if_num_ge
 
 // go to end_if_num_ge
-mov #18
-br
+br end_if_num_ge
 
-// if_num_ge:
+if_num_ge:
 
 // num -= res + bit
 // LSB{num} = LSB{temp} - LSB{num}
@@ -179,7 +174,7 @@ rdr r2
 adc r6
 wrt r2
 
-// end_if_num_ge:
+end_if_num_ge:
 
 // res >>= 1
 // get bottom bit of MSB{res} into r6
@@ -212,18 +207,16 @@ lsr #2
 orr r6
 wrt r5
 
-// bit_loop_cond:
+bit_loop_cond:
 rdr r4
 cmp $zero
 beq #3
-mov #-60 // start of loop
-br
+br bit_loop // start of loop
 
 rdr r5
 cmp $zero
 beq #3
-mov #-65 // start of loop
-br
+br bit_loop // start of loop
 
 // END OF LOOP
 
@@ -286,28 +279,26 @@ wrt r2
 rdr r2
 cmp r0
 ble #3 // continue
-mov #12 // we know res > num or num < res, exit
-br
+br done // we know res > num or num < res, exit
 
 // we know res <= num, num >= res in msb
 // if MSB{num} != MSB{res} same as MSB{res} 
 rdr r0
 cmp r2
 beq #3 // MSB{num} == MSB{res} continue
-mov #5 // go to round up not equal so num > res
-br
+br round_up
 
 // check lsb
 rdr r3
 cmp r1
 bgt #4 // exit, res > num, or num < res
 
-// round_up:
+round_up:
 rdr r9
 add r7
 wrt r9
 
-// done:
+done:
 
 halt
 
