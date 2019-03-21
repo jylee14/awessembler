@@ -46,7 +46,7 @@ mov #1                  //lets check if divisor is 1
 cmp r2
 bne check_equal
 
-br divisor_is_one
+br divisor_is_one_intermediate
 
 //check if dividend == divisor
 check_equal:
@@ -133,6 +133,12 @@ rdr r0      //read MSB of R, to be subbed from D
 sub r2      //subtract D
 wrt r0      //write the result to MSB of R
 
+br over_intermed_jump
+
+divisor_is_one_intermediate:
+br divisor_is_one
+
+over_intermed_jump:
 br cleanup
 
 else:       //R += D
