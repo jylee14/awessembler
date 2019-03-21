@@ -29,7 +29,7 @@ mov #0
 cmp r2
 bne not_zero_divisor
 
-br zero_divisor
+br zero_divisor_intermed
 
 //check zero dividend. #0 still in acc
 not_zero_divisor:
@@ -140,6 +140,9 @@ br divisor_is_one
 
 zero_dividend_intermed:
 br zero_dividend
+
+zero_divisor_intermed:
+br zero_divisor
 
 over_intermed_jump:
 br cleanup
