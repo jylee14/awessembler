@@ -64,7 +64,7 @@ wrt r6
 loop:
 rdr r0      //MSB{R}
 cmp r2      //MSB{N}
-ble MSB_CHECK      //skip to else body
+ble MSB_CHECK      //if not, skip to else body
 
 br else
 
@@ -84,7 +84,7 @@ ble #3      //if LSB{R} <= LSB{N}, then if step
 
 //else body, won't do anything cuz r7 | r6 are zero by default
 else:
-br shift    //byeeeeee
+br ENDIF    //byeeeeee
 
 IF:
 mov #0     //compare r5 against 0
@@ -116,20 +116,7 @@ sbc r0
 wrt r2
 
 // SHIFTING HERE, END IF
-//N << 1
-shift:
-rdr r2      //r2 << 1
-lsl #1     //r2 << 1
-wrt r2      //r2 << 1
-
-mov #0x80  // r3 & #0x7f
-and r3      // r3 & #0x7f
-lsr #7     // lsr $acc #7
-orr r2      // and $acc r2 (complete the shift)
-wrt r2      // write to r2
-rdr r3      // r3 << 1
-lsl #1     // r3 << 1
-wrt r3      // r3 << 1
+ENDIF:
 
 // q_ setter>> 1 to be used in next loop
 rdr r4
@@ -149,13 +136,86 @@ wrt r4
 // if counter > 1 (or 1 < counter, or 2 <= counter) exit loop
 mov #2
 cmp r5
-ble EXIT_LOOP // exit loop
+bgt #3
+br EXIT_LOOP // exit looop when 2 <= counter, counter <= 2
+
+
+//N << 1
+rdr r2      //r2 << 1
+lsl #1     //r2 << 1
+wrt r2      //r2 << 1
+
+mov #0x80  // r3 & #0x7f
+and r3      // r3 & #0x7f
+lsr #7     // lsr $acc #7
+orr r2      // and $acc r2 (complete the shift)
+wrt r2      // write to r2
+rdr r3      // r3 << 1
+lsl #1     // r3 << 1
+wrt r3      // r3 << 1
 
 br loop
-
 // loop end
-// write to memory the results
 EXIT_LOOP:
+
+// if N has the top bit set, we will always be 
+// greater because we will shift left
+mov #0x80
+and r2
+cmp $zero
+beq #3
+br SET_REMAINDER
+
+//N << 1
+rdr r2      //r2 << 1
+lsl #1     //r2 << 1
+wrt r2      //r2 << 1
+
+mov #0x80  // r3 & #0x7f
+and r3      // r3 & #0x7f
+lsr #7     // lsr $acc #7
+orr r2      // and $acc r2 (complete the shift)
+wrt r2      // write to r2
+rdr r3      // r3 << 1
+lsl #1     // r3 << 1
+wrt r3      // r3 << 1
+
+// SET REMAINDER
+// if N >= R
+rdr r2
+cmp r0
+ble #3 // MSB{N} > MSB{R}
+// continue if MSB{N} <= MSB{R}
+br SET_REMAINDER
+
+rdr r2
+cmp r0
+beq #3 // MSB{N} = MSB{R}, continue to lsb check
+br DONE_REMAINDER // MSB{N} != MSB{R} so it must be less (no rem)
+
+rdr r1
+cmp r3
+ble SET_REMAINDER // LSB{R} >= LSB{N} 
+
+br DONE_REMAINDER
+
+SET_REMAINDER:
+
+mov #1
+add r6
+wrt r6
+
+mov #0
+wrt r4 // Q_SETTER not needed anymore
+
+rdr r7
+adc r4 // Q_SETTER should be 0
+wrt r7
+
+DONE_REMAINDER:
+
+
+// write to memory the results
 mov #10
 wrt r0
 rdr r7
