@@ -29,7 +29,7 @@ mov #0
 cmp r2
 bne not_zero_divisor
 
-br zero_divisor_intermed
+br zero_divisor_intermed1
 
 //check zero dividend. #0 still in acc
 not_zero_divisor:
@@ -39,14 +39,14 @@ bne not_zero_dividend
 cmp r1
 bne not_zero_dividend
 
-br zero_dividend_intermed
+br zero_dividend_intermed1
 
 not_zero_dividend:
 mov #1                  //lets check if divisor is 1
 cmp r2
 bne check_equal
 
-br divisor_is_one_intermediate
+br divisor_is_one_intermed1
 
 //check if dividend == divisor
 check_equal:
@@ -87,7 +87,20 @@ rdr r1      //read LSB
 lsl #1      //left shift 1
 wrt r1      //write back to r1
 
+br r_check
+
+//hack cuz 8 bit limit
+divisor_is_one_intermed1:
+br divisor_is_one_intermed2
+
+zero_dividend_intermed1:
+br zero_dividend_intermed2
+
+zero_divisor_intermed1:
+br zero_divisor_intermed2
+
 //if R >= 0 then
+r_check:
 mov #0
 cmp r0
 ble r_le_zero
@@ -133,18 +146,18 @@ rdr r0      //read MSB of R, to be subbed from D
 sub r2      //subtract D
 wrt r0      //write the result to MSB of R
 
-br over_intermed_jump
+br skip_intermed
 
-divisor_is_one_intermediate:
+divisor_is_one_intermed2:
 br divisor_is_one
 
-zero_dividend_intermed:
+zero_dividend_intermed2:
 br zero_dividend
 
-zero_divisor_intermed:
+zero_divisor_intermed2:
 br zero_divisor
 
-over_intermed_jump:
+skip_intermed:
 br cleanup
 
 else:       //R += D
