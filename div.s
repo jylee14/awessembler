@@ -58,7 +58,7 @@ rdr r1
 cmp r2
 bne init
 
-br return_one
+br return_one_intermed1
 
 init:
 mov #7     //for setting q[i] = 0/1
@@ -98,6 +98,9 @@ br zero_dividend_intermed2
 
 zero_divisor_intermed1:
 br zero_divisor_intermed2
+
+return_one_intermed1:
+br return_one_intermed2
 
 //if R >= 0 then
 r_check:
@@ -156,6 +159,9 @@ br zero_dividend
 
 zero_divisor_intermed2:
 br zero_divisor
+
+return_one_intermed2:
+br return_one
 
 skip_intermed:
 br cleanup
