@@ -18,8 +18,14 @@ fn main() {
 
     match awessembler::process_command_args(&args){
         Err(e) => {
-            eprintln!("Assembly failed!\nAt line {}, {}",
-                      e.line_number, e.message);
+            eprintln!("Assembly failed!\nLine {}, {}\nError: {}",
+                      e.line_number,
+                      if let Some(line) = e.line{
+                          line
+                      }else{
+                          String::from("")
+                      },
+                      e.message);
         },
         _ => println!("DONE"),
     };
