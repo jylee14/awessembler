@@ -39,7 +39,7 @@ bne not_zero_dividend
 cmp r1
 bne not_zero_dividend
 
-br zero_dividend
+br zero_dividend_intermed
 
 not_zero_dividend:
 mov #1                  //lets check if divisor is 1
@@ -137,6 +137,9 @@ br over_intermed_jump
 
 divisor_is_one_intermediate:
 br divisor_is_one
+
+zero_dividend_intermed:
+br zero_dividend
 
 over_intermed_jump:
 br cleanup
