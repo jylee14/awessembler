@@ -29,7 +29,7 @@ mov #0
 cmp r2
 bne not_zero_divisor
 
-br zero_divisor
+br zero_divisor_intermed1
 
 //check zero dividend. #0 still in acc
 not_zero_divisor:
@@ -39,14 +39,14 @@ bne not_zero_dividend
 cmp r1
 bne not_zero_dividend
 
-br zero_dividend
+br zero_dividend_intermed1
 
 not_zero_dividend:
 mov #1                  //lets check if divisor is 1
 cmp r2
 bne check_equal
 
-br divisor_is_one_intermediate
+br divisor_is_one_intermed1
 
 //check if dividend == divisor
 check_equal:
@@ -54,14 +54,14 @@ mov #0
 cmp r0
 bne init
 
-rdr r1
-cmp r2
-bne init
+rdr r1      //check if r1 == r2
+cmp r2      //if so, return one
+bne init    //else, go to init
 
-br return_one
+br return_one_intermed1
 
 init:
-mov #7     //for setting q[i] = 0/1
+mov #0x80     //for setting q[i] = 0/1
 wrt r3
 
 //////////////////////////////////////////////////
@@ -87,7 +87,23 @@ rdr r1      //read LSB
 lsl #1      //left shift 1
 wrt r1      //write back to r1
 
+br r_check
+
+//hack cuz 8 bit limit
+divisor_is_one_intermed1:
+br divisor_is_one_intermed2
+
+zero_dividend_intermed1:
+br zero_dividend_intermed2
+
+zero_divisor_intermed1:
+br zero_divisor_intermed2
+
+return_one_intermed1:
+br return_one_intermed2
+
 //if R >= 0 then
+r_check:
 mov #0
 cmp r0
 ble r_le_zero
@@ -132,13 +148,21 @@ sub:        //R -= D (R is already 2 * R)
 rdr r0      //read MSB of R, to be subbed from D
 sub r2      //subtract D
 wrt r0      //write the result to MSB of R
+br skip_intermed
 
-br over_intermed_jump
-
-divisor_is_one_intermediate:
+divisor_is_one_intermed2:
 br divisor_is_one
 
-over_intermed_jump:
+zero_dividend_intermed2:
+br zero_dividend
+
+zero_divisor_intermed2:
+br zero_divisor
+
+return_one_intermed2:
+br return_one
+
+skip_intermed:
 br cleanup
 
 else:       //R += D
