@@ -240,6 +240,13 @@ wrt r14 //for debugging
 str [r7]
 
 rounding:
+// if 1 > divisor (divisor is 1 or 0), skip rounding
+mov #2
+cmp r0
+ble #3 // continue to rounding if 2 <= divisor (divisor >= 2, not 0 or 1)
+br done
+
+// cmp r0 to divisor >> 1, or divisor /2
 rdr r0
 lsr #1
 cmp r3
