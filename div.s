@@ -54,14 +54,14 @@ mov #0
 cmp r0
 bne init
 
-rdr r1
-cmp r2
-bne init
+rdr r1      //check if r1 == r2
+cmp r2      //if so, return one
+bne init    //else, go to init
 
 br return_one_intermed1
 
 init:
-mov #7     //for setting q[i] = 0/1
+mov #0x80     //for setting q[i] = 0/1
 wrt r3
 
 //////////////////////////////////////////////////
@@ -148,7 +148,6 @@ sub:        //R -= D (R is already 2 * R)
 rdr r0      //read MSB of R, to be subbed from D
 sub r2      //subtract D
 wrt r0      //write the result to MSB of R
-
 br skip_intermed
 
 divisor_is_one_intermed2:
