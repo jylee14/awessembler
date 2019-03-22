@@ -210,6 +210,8 @@ wrt r7  //write to r7
 rdr r1  //read Q
 wrt r12 //for debugging
 str [r7]
+mov #0
+wrt r1
 
 mov #1  //increment flag
 add r4  //cuz thats important
@@ -223,6 +225,8 @@ rdr r1  //read Q
 wrt r13 //for debugging
 str [r7]
 
+mov #0
+wrt r1
 mov #1  //increment flag
 add r4  //cuz thats important
 wrt r4  //who knew :shrug:
@@ -236,7 +240,26 @@ wrt r14 //for debugging
 str [r7]
 
 rounding:
+rdr r0
+lsr #1
+cmp r3
+ble round
+
 br done
+
+round:
+
+rdr r14
+wrt r6
+mov #1
+add r6
+wrt r6
+wrt r14
+
+mov #6
+wrt r7
+rdr r6
+str [r7]
 
 done:
 halt
