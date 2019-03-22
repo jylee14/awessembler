@@ -209,6 +209,10 @@ wrt r7  //write to r7
 rdr r1  //read Q
 wrt r12 //for debugging
 str [r7]
+
+mov #1  //increment flag
+add r4  //cuz thats important
+wrt r4  //who knew :shrug:
 br intermed_jump_back_to_loop
 
 LSB_Q:
@@ -217,6 +221,10 @@ wrt r7  //write to r7
 rdr r1  //read Q
 wrt r13 //for debugging
 str [r7]
+
+mov #1  //increment flag
+add r4  //cuz thats important
+wrt r4  //who knew :shrug:
 br intermed_jump_back_to_loop
 
 frac_Q:
