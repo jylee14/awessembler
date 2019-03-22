@@ -1,13 +1,13 @@
 // TODO load from mem
 
 // load from address 16 to r0
-mov #16
+mov #13
 wrt r7
 ldr [r7]
 wrt r0
 
 // load from address 17 to r1
-mov #17
+mov #14
 wrt r7
 ldr [r7]
 wrt r1
@@ -299,6 +299,11 @@ add r7
 wrt r9
 
 done:
+
+mov #15
+wrt r7
+rdr r9
+str [r7]
 
 halt
 
