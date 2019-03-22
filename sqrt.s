@@ -291,10 +291,16 @@ br round_up
 // check lsb
 rdr r3
 cmp r1
-bgt #4 // exit, res > num, or num < res
+bgt jump_to_done // exit, res > num, or num < res
 
 round_up:
 rdr r9
+wrt r6
+mov #0xff
+cmp r6 
+jump_to_done: 
+beq done
+rdr r6 
 add r7
 wrt r9
 

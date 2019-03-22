@@ -64,7 +64,7 @@ wrt r7
 mov #0xff
 str [r7]
 
-halt
+br intermed_to_done
 
 loop:
 // read R_LSB[7], if it is 1, then carry it over to R_MSB
@@ -244,6 +244,7 @@ rounding:
 mov #2
 cmp r0
 ble #3 // continue to rounding if 2 <= divisor (divisor >= 2, not 0 or 1)
+intermed_to_done:
 br done
 
 // cmp r0 to divisor >> 1, or divisor /2
